@@ -7,17 +7,35 @@ import { ScheduleTable } from './components/ScheduleTable';
 import { AIAnalyst } from './components/AIAnalyst';
 import { Login } from './components/Login';
 import { ViewState, Student, User, Teacher, Schedule } from './types';
-import { MOCK_STUDENTS, MOCK_TEACHERS, MOCK_SCHEDULES } from './constants';
+import { fetchSheetData } from './services/sheetService';
 
 const App: React.FC = () => {
   // Auth State
   const [user, setUser] = useState<User | null>(null);
 
-  // Data States (Simulated Local Database)
+  // Application Data States
+  const [students, setStudents] = useState<Student[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [currentView, setView] = useState<ViewState>(ViewState.DASHBOARD);
-  const [students, setStudents] = useState<Student[]>(MOCK_STUDENTS);
-  const [teachers, setTeachers] = useState<Teacher[]>(MOCK_TEACHERS);
-  const [schedules] = useState<Schedule[]>(MOCK_SCHEDULES);
+
+  // Initialize Data from Spreadsheet
+  useEffect(() => {
+    const initData = async () => {
+        setIsLoading(true);
+        const data = await fetchSheetData();
+        setUsers(data.users);
+        setStudents(data.students);
+        setTeachers(data.teachers);
+        setSchedules(data.schedules);
+        setIsLoading(false);
+    };
+
+    initData();
+  }, []);
 
   // Reset view when user changes
   useEffect(() => {
@@ -90,7 +108,7 @@ const App: React.FC = () => {
 
   // --- RENDER LOGIN IF NO USER ---
   if (!user) {
-      return <Login onLogin={setUser} />;
+      return <Login users={users} onLogin={setUser} isLoadingData={isLoading} />;
   }
 
   return (
@@ -117,7 +135,7 @@ const App: React.FC = () => {
                     </p>
                 </div>
                 <div className="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center font-bold border-2 border-emerald-100 shadow-sm">
-                    {user.avatar}
+                    {user.avatar ? user.avatar.substring(0,2).toUpperCase() : 'U'}
                 </div>
             </div>
         </header>
