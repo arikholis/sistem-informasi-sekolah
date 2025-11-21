@@ -9,7 +9,7 @@ import { UserManagement } from './components/UserManagement';
 import { Settings } from './components/Settings';
 import { Login } from './components/Login';
 import { ViewState, Student, User, Teacher, Schedule } from './types';
-import { fetchSheetData } from './services/sheetService';
+import { fetchSheetData, saveSheetData } from './services/sheetService';
 
 const App: React.FC = () => {
   // Auth State
@@ -50,20 +50,40 @@ const App: React.FC = () => {
       setUser(null);
   };
 
-  // Update User Password/Details
-  const handleUpdateUser = (updatedUser: User) => {
-      // Update in local state 'users' list
-      setUsers(prev => prev.map(u => u.username === updatedUser.username ? updatedUser : u));
-      
-      // If updating self, update current session
-      if (user && user.username === updatedUser.username) {
-          setUser(updatedUser);
-      }
+  // --- UPDATE HANDLERS WITH PERSISTENCE ---
+
+  const handleUpdateStudents = (newData: Student[]) => {
+      setStudents(newData);
+      saveSheetData('Nilai', newData);
   };
 
-  const handleManageUsers = (updatedUsersList: User[]) => {
-      setUsers(updatedUsersList);
-  }
+  const handleUpdateTeachers = (newData: Teacher[]) => {
+      setTeachers(newData);
+      saveSheetData('Guru', newData);
+  };
+
+  const handleUpdateSchedules = (newData: Schedule[]) => {
+      setSchedules(newData);
+      saveSheetData('Jadwal', newData);
+  };
+
+  const handleUpdateUsers = (newData: User[]) => {
+      setUsers(newData);
+      // Update current user session if self-update
+      if (user) {
+          const me = newData.find(u => u.username === user.username);
+          if (me) setUser(me);
+      }
+      saveSheetData('Akun', newData);
+  };
+
+  // Single User Update (Settings Profile)
+  const handleUpdateSingleUser = (updatedUser: User) => {
+      const newUsersList = users.map(u => u.username === updatedUser.username ? updatedUser : u);
+      setUsers(newUsersList);
+      setUser(updatedUser);
+      saveSheetData('Akun', newUsersList);
+  };
 
   // Content Rendering Logic based on Role and ViewState
   const renderContent = () => {
@@ -80,25 +100,20 @@ const App: React.FC = () => {
       
       case ViewState.USER_MANAGEMENT:
          if (!['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER'].includes(user.role)) return <div>Akses Ditolak</div>;
-         return <UserManagement users={users} onUpdateUsers={handleManageUsers} currentUserRole={user.role} />;
+         return <UserManagement users={users} onUpdateUsers={handleUpdateUsers} currentUserRole={user.role} />;
 
       case ViewState.SETTINGS:
-          return <Settings currentUser={user} onUpdateUser={handleUpdateUser} />;
+          return <Settings currentUser={user} onUpdateUser={handleUpdateSingleUser} />;
 
       case ViewState.STUDENTS:
-        return <SpreadsheetTable data={students} onUpdateData={setStudents} role={user.role} />;
+        return <SpreadsheetTable data={students} onUpdateData={handleUpdateStudents} role={user.role} />;
       
       case ViewState.TEACHERS:
-        return <TeacherTable data={teachers} onUpdateData={setTeachers} role={user.role} />;
+        return <TeacherTable data={teachers} onUpdateData={handleUpdateTeachers} role={user.role} />;
       
       case ViewState.SCHEDULE:
-        // Filter schedule based on role
         let displaySchedule = schedules;
-        let onUpdateSchedule = (newData: Schedule[]) => setSchedules(newData);
-
-        // Student only sees their schedule (filtered by class logic if we had student class in user, simplified here)
-        // For now, Student sees all but can't edit.
-        // Edit access passed only if allowed role
+        
         const canEditSchedule = ['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER', 'TEACHER'].includes(user.role);
 
         if (user.role === 'STUDENT' && user.studentId) {
@@ -108,10 +123,9 @@ const App: React.FC = () => {
              }
         }
         
-        return <ScheduleTable data={displaySchedule} onUpdateSchedule={canEditSchedule ? onUpdateSchedule : undefined} role={user.role} />;
+        return <ScheduleTable data={displaySchedule} onUpdateSchedule={canEditSchedule ? handleUpdateSchedules : undefined} role={user.role} />;
 
       case ViewState.MY_GRADES:
-         // Reuse SpreadsheetTable but read-only and filtered
          if (user.role === 'STUDENT' && user.studentId) {
              const myData = students.filter(s => s.id === user.studentId);
              return <SpreadsheetTable data={myData} onUpdateData={()=>{}} role={user.role} />;

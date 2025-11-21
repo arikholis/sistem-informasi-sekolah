@@ -1,8 +1,12 @@
 import { Student, Teacher, Schedule, User } from './types';
 
 // --- Spreadsheet Configuration ---
-// Link: https://docs.google.com/spreadsheets/d/1YVZh5YvPL2piYOaMjucCS6-XREJHT65KxFlHZkTiUqI
+// Link View: https://docs.google.com/spreadsheets/d/1YVZh5YvPL2piYOaMjucCS6-XREJHT65KxFlHZkTiUqI
 export const SPREADSHEET_ID = "1YVZh5YvPL2piYOaMjucCS6-XREJHT65KxFlHZkTiUqI";
+
+// --- Google Apps Script Web App URL ---
+// URL ini digunakan untuk mengirim data (POST) kembali ke spreadsheet
+export const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXQsy4O6K8hbgPRExmgB2ljfJFCiOFytDmN4sou9K4-SXfcR7iG6thhRqH641gixHr2A/exec"; 
 
 // --- Mock Users (Empty - Real data comes from Spreadsheet) ---
 export const MOCK_USERS: User[] = [];
