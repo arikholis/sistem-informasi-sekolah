@@ -17,7 +17,7 @@ export const Login: React.FC<LoginProps> = ({ users, onLogin, isLoadingData }) =
     e.preventDefault();
     setError(null);
 
-    // 1. Cek Master Admin (Hardcoded)
+    // 1. Cek Master Admin (Hardcoded sebagai backup jika sheet kosong)
     if (username === 'admin' && password === 'P@ssword') {
         const adminUser: User = {
             username: 'admin',
@@ -30,18 +30,19 @@ export const Login: React.FC<LoginProps> = ({ users, onLogin, isLoadingData }) =
     }
 
     // 2. Cek User dari Spreadsheet
-    // Karena spreadsheet publik biasanya tidak menyimpan hash password, 
-    // kita gunakan password default '123' untuk semua user sheet demi simulasi.
-    const foundUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    const foundUser = users.find(u => u.username && u.username.toLowerCase() === username.toLowerCase());
 
     if (foundUser) {
-        if (password === '123') {
+        // Gunakan password dari spreadsheet, jika kosong gunakan '123'
+        const validPassword = foundUser.password || '123';
+        
+        if (password === validPassword) {
             onLogin(foundUser);
         } else {
-            setError('Password salah. (Default: 123)');
+            setError('Password salah.');
         }
     } else {
-        setError('Username tidak ditemukan.');
+        setError('Username tidak ditemukan dalam database.');
     }
   };
 
@@ -100,9 +101,6 @@ export const Login: React.FC<LoginProps> = ({ users, onLogin, isLoadingData }) =
                             required
                         />
                     </div>
-                    <p className="text-xs text-slate-400 mt-1 text-right">
-                        Default user password: <strong>123</strong>
-                    </p>
                 </div>
 
                 <div className="pt-2">

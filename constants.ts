@@ -1,6 +1,7 @@
 import { Student, Teacher, Schedule, User } from './types';
 
 // --- Spreadsheet Configuration ---
+// Link: https://docs.google.com/spreadsheets/d/1YVZh5YvPL2piYOaMjucCS6-XREJHT65KxFlHZkTiUqI
 export const SPREADSHEET_ID = "1YVZh5YvPL2piYOaMjucCS6-XREJHT65KxFlHZkTiUqI";
 
 // --- Mock Users (Empty - Real data comes from Spreadsheet) ---
