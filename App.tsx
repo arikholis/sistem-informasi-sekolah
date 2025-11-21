@@ -5,6 +5,8 @@ import { SpreadsheetTable } from './components/SpreadsheetTable';
 import { TeacherTable } from './components/TeacherTable';
 import { ScheduleTable } from './components/ScheduleTable';
 import { AIAnalyst } from './components/AIAnalyst';
+import { UserManagement } from './components/UserManagement';
+import { Settings } from './components/Settings';
 import { Login } from './components/Login';
 import { ViewState, Student, User, Teacher, Schedule } from './types';
 import { fetchSheetData } from './services/sheetService';
@@ -48,6 +50,21 @@ const App: React.FC = () => {
       setUser(null);
   };
 
+  // Update User Password/Details
+  const handleUpdateUser = (updatedUser: User) => {
+      // Update in local state 'users' list
+      setUsers(prev => prev.map(u => u.username === updatedUser.username ? updatedUser : u));
+      
+      // If updating self, update current session
+      if (user && user.username === updatedUser.username) {
+          setUser(updatedUser);
+      }
+  };
+
+  const handleManageUsers = (updatedUsersList: User[]) => {
+      setUsers(updatedUsersList);
+  }
+
   // Content Rendering Logic based on Role and ViewState
   const renderContent = () => {
     if (!user) return null;
@@ -61,6 +78,13 @@ const App: React.FC = () => {
         }
         return <Dashboard data={dashboardData} />;
       
+      case ViewState.USER_MANAGEMENT:
+         if (!['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER'].includes(user.role)) return <div>Akses Ditolak</div>;
+         return <UserManagement users={users} onUpdateUsers={handleManageUsers} currentUserRole={user.role} />;
+
+      case ViewState.SETTINGS:
+          return <Settings currentUser={user} onUpdateUser={handleUpdateUser} />;
+
       case ViewState.STUDENTS:
         return <SpreadsheetTable data={students} onUpdateData={setStudents} role={user.role} />;
       
@@ -70,13 +94,21 @@ const App: React.FC = () => {
       case ViewState.SCHEDULE:
         // Filter schedule based on role
         let displaySchedule = schedules;
+        let onUpdateSchedule = (newData: Schedule[]) => setSchedules(newData);
+
+        // Student only sees their schedule (filtered by class logic if we had student class in user, simplified here)
+        // For now, Student sees all but can't edit.
+        // Edit access passed only if allowed role
+        const canEditSchedule = ['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER', 'TEACHER'].includes(user.role);
+
         if (user.role === 'STUDENT' && user.studentId) {
              const myData = students.find(s => s.id === user.studentId);
              if (myData) {
                  displaySchedule = schedules.filter(s => s.class === myData.class);
              }
         }
-        return <ScheduleTable data={displaySchedule} />;
+        
+        return <ScheduleTable data={displaySchedule} onUpdateSchedule={canEditSchedule ? onUpdateSchedule : undefined} role={user.role} />;
 
       case ViewState.MY_GRADES:
          // Reuse SpreadsheetTable but read-only and filtered
@@ -97,11 +129,13 @@ const App: React.FC = () => {
   const getTitle = () => {
       switch (currentView) {
           case ViewState.DASHBOARD: return 'Dashboard Utama';
+          case ViewState.USER_MANAGEMENT: return 'Manajemen Akun';
+          case ViewState.SETTINGS: return 'Pengaturan Akun';
           case ViewState.STUDENTS: return 'Database Siswa';
           case ViewState.TEACHERS: return 'Data Guru & Staf';
           case ViewState.SCHEDULE: return 'Jadwal Pelajaran';
           case ViewState.MY_GRADES: return 'Laporan Hasil Belajar';
-          case ViewState.AI_ANALYST: return 'AI Education Analyst';
+          case ViewState.AI_ANALYST: return 'Analisis Akademik';
           default: return 'Smart Ekselensia';
       }
   }
@@ -134,8 +168,12 @@ const App: React.FC = () => {
                         {user.role}
                     </p>
                 </div>
-                <div className="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center font-bold border-2 border-emerald-100 shadow-sm">
-                    {user.avatar ? user.avatar.substring(0,2).toUpperCase() : 'U'}
+                <div className="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center font-bold border-2 border-emerald-100 shadow-sm overflow-hidden">
+                    {user.avatar ? (
+                        <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                    ) : (
+                        <span>{user.name.charAt(0)}</span>
+                    )}
                 </div>
             </div>
         </header>

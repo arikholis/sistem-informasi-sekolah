@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User } from '../types';
-import { School, ArrowRight, Database, AlertCircle } from 'lucide-react';
+import { School, ArrowRight, Database, Lock, User as UserIcon, AlertTriangle } from 'lucide-react';
 
 interface LoginProps {
   users: User[];
@@ -9,19 +9,39 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ users, onLogin, isLoadingData }) => {
-  const [selectedUsername, setSelectedUsername] = useState('');
-
-  useEffect(() => {
-      if (users.length > 0) {
-          setSelectedUsername(users[0].username);
-      }
-  }, [users]);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const user = users.find(u => u.username === selectedUsername);
-    if (user) {
-        onLogin(user);
+    setError(null);
+
+    // 1. Cek Master Admin (Hardcoded)
+    if (username === 'admin' && password === 'P@ssword') {
+        const adminUser: User = {
+            username: 'admin',
+            name: 'Master Administrator',
+            role: 'ADMIN',
+            avatar: 'https://ui-avatars.com/api/?name=Admin+Master&background=0D9488&color=fff'
+        };
+        onLogin(adminUser);
+        return;
+    }
+
+    // 2. Cek User dari Spreadsheet
+    // Karena spreadsheet publik biasanya tidak menyimpan hash password, 
+    // kita gunakan password default '123' untuk semua user sheet demi simulasi.
+    const foundUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+
+    if (foundUser) {
+        if (password === '123') {
+            onLogin(foundUser);
+        } else {
+            setError('Password salah. (Default: 123)');
+        }
+    } else {
+        setError('Username tidak ditemukan.');
     }
   };
 
@@ -44,55 +64,65 @@ export const Login: React.FC<LoginProps> = ({ users, onLogin, isLoadingData }) =
         </div>
         
         <div className="p-8">
-            <form onSubmit={handleLogin} className="space-y-6">
+            <form onSubmit={handleLogin} className="space-y-4">
+                {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        {error}
+                    </div>
+                )}
+
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Pilih Akun</label>
-                    {isLoadingData ? (
-                        <div className="w-full h-12 bg-slate-100 rounded-lg animate-pulse"></div>
-                    ) : users.length > 0 ? (
-                        <select 
-                            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none bg-white"
-                            value={selectedUsername}
-                            onChange={(e) => setSelectedUsername(e.target.value)}
-                        >
-                            {users.map(u => (
-                                <option key={u.username} value={u.username}>
-                                    {u.name} — {u.role}
-                                </option>
-                            ))}
-                        </select>
-                    ) : (
-                        <div className="p-4 bg-red-50 rounded-lg border border-red-100 flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm font-bold text-red-700">Data Akun Tidak Ditemukan</p>
-                                <p className="text-xs text-red-600 mt-1">
-                                    Gagal memuat data dari Spreadsheet. Pastikan dokumen Google Sheet sudah dipublikasikan ke web (Format CSV).
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {users.length > 0 && (
-                        <div className="flex items-center gap-2 mt-3 text-xs text-slate-500 bg-slate-50 p-2 rounded border border-slate-100">
-                            <Database className="w-3 h-3" />
-                            Terhubung ke Database Spreadsheet
-                        </div>
-                    )}
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                    <div className="relative">
+                        <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <input 
+                            type="text"
+                            className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none bg-white text-sm"
+                            placeholder="Masukkan username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                        />
+                    </div>
                 </div>
 
-                <button 
-                    type="submit"
-                    disabled={isLoadingData || users.length === 0}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 disabled:shadow-none"
-                >
-                    {isLoadingData ? 'Memuat...' : 'Masuk Portal'}
-                    {!isLoadingData && <ArrowRight className="w-4 h-4" />}
-                </button>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <input 
+                            type="password"
+                            className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none bg-white text-sm"
+                            placeholder="Masukkan password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1 text-right">
+                        Default user password: <strong>123</strong>
+                    </p>
+                </div>
+
+                <div className="pt-2">
+                    <button 
+                        type="submit"
+                        disabled={isLoadingData}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 disabled:shadow-none"
+                    >
+                        {isLoadingData ? 'Menghubungkan...' : 'Masuk Portal'}
+                        {!isLoadingData && <ArrowRight className="w-4 h-4" />}
+                    </button>
+                </div>
             </form>
-        </div>
-        <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
-            <p className="text-xs text-slate-400">Powered by Smart Database System</p>
+
+            {users.length > 0 && (
+                <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+                    <Database className="w-3 h-3" />
+                    <span>Terhubung ke {users.length} akun database</span>
+                </div>
+            )}
         </div>
       </div>
     </div>

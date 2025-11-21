@@ -1,6 +1,6 @@
 import React from 'react';
 import { ViewState, UserRole } from '../types';
-import { LayoutDashboard, Users, GraduationCap, CalendarDays, BookOpen, LogOut, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Users, GraduationCap, CalendarDays, BookOpen, LogOut, Sparkles, UserCog, Settings } from 'lucide-react';
 
 interface SidebarProps {
   currentView: ViewState;
@@ -14,11 +14,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, role, on
   const getNavItems = () => {
     const items = [
       { id: ViewState.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER', 'TEACHER', 'STUDENT'] },
+      { id: ViewState.USER_MANAGEMENT, label: 'Manajemen Akun', icon: UserCog, roles: ['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER'] },
       { id: ViewState.STUDENTS, label: 'Data Siswa & Nilai', icon: GraduationCap, roles: ['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER', 'TEACHER'] },
       { id: ViewState.TEACHERS, label: 'Data Guru', icon: Users, roles: ['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER'] },
       { id: ViewState.SCHEDULE, label: 'Jadwal Pelajaran', icon: CalendarDays, roles: ['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER', 'TEACHER', 'STUDENT'] },
       { id: ViewState.MY_GRADES, label: 'Nilai Saya', icon: BookOpen, roles: ['STUDENT'] },
-      { id: ViewState.AI_ANALYST, label: 'AI Analyst', icon: Sparkles, roles: ['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER'] },
+      { id: ViewState.AI_ANALYST, label: 'Analisis Data', icon: Sparkles, roles: ['ADMIN', 'HEADMASTER', 'VICE_HEADMASTER'] },
     ];
 
     return items.filter(item => item.roles.includes(role));
@@ -40,7 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, role, on
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -61,7 +62,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, role, on
         })}
       </nav>
 
-      <div className="p-4 border-t border-emerald-800">
+      <div className="p-4 border-t border-emerald-800 space-y-2">
+        <button 
+            onClick={() => setView(ViewState.SETTINGS)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                currentView === ViewState.SETTINGS ? 'bg-emerald-800 text-white' : 'text-emerald-200 hover:text-white hover:bg-emerald-800'
+            }`}
+        >
+            <Settings className="w-5 h-5" />
+            <span>Pengaturan</span>
+        </button>
+
         <button 
             onClick={onLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-200 hover:bg-red-900/30 hover:text-red-100 transition-all"
@@ -69,9 +80,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, role, on
             <LogOut className="w-5 h-5" />
             <span>Keluar</span>
         </button>
-        <div className="mt-4 text-center text-xs text-emerald-400">
-            &copy; 2024 Smart Ekselensia
-        </div>
       </div>
     </div>
   );

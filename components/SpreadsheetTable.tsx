@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Student, UserRole } from '../types';
-import { Download, Search, Trash2, Save, Edit2, Plus } from 'lucide-react';
+import { Download, Search, Trash2, Save, Edit2, Plus, FileSpreadsheet } from 'lucide-react';
+import { parseExcel, mapExcelToStudents } from '../services/excelService';
 
 interface SpreadsheetTableProps {
   data: Student[];
@@ -12,6 +13,7 @@ export const SpreadsheetTable: React.FC<SpreadsheetTableProps> = ({ data, onUpda
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Student>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Permission check: Admin, Guru, Kepsek, Wakasek bisa melakukan CRUD
   const canEdit = ['ADMIN', 'TEACHER', 'HEADMASTER', 'VICE_HEADMASTER'].includes(role);
@@ -36,6 +38,23 @@ export const SpreadsheetTable: React.FC<SpreadsheetTableProps> = ({ data, onUpda
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+        const raw = await parseExcel(file);
+        const newStudents = mapExcelToStudents(raw);
+        
+        // Append data
+        onUpdateData([...data, ...newStudents]);
+        alert(`Berhasil menambahkan ${newStudents.length} data siswa.`);
+    } catch (err) {
+        alert('Gagal memproses Excel.');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // CREATE: Tambah Data Baru
@@ -104,22 +123,32 @@ export const SpreadsheetTable: React.FC<SpreadsheetTableProps> = ({ data, onUpda
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {canEdit && (
-              <button 
-                onClick={handleAddStudent}
-                className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 font-medium transition-colors shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Tambah Siswa
-              </button>
+              <>
+                <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 font-medium transition-colors border border-slate-300"
+                >
+                    <FileSpreadsheet className="w-4 h-4" /> Upload Excel
+                </button>
+                <input type="file" ref={fileInputRef} hidden accept=".xlsx, .xls" onChange={handleExcelUpload} />
+
+                <button 
+                    onClick={handleAddStudent}
+                    className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 font-medium transition-colors shadow-sm"
+                >
+                    <Plus className="w-4 h-4" />
+                    Tambah
+                </button>
+              </>
           )}
           <button 
             onClick={handleExportCSV}
             className="flex items-center gap-2 px-3 py-2 bg-slate-600 text-white rounded-lg text-sm hover:bg-slate-700 font-medium transition-colors shadow-sm"
           >
             <Download className="w-4 h-4" />
-            Export XLS
+            Export CSV
           </button>
         </div>
       </div>
@@ -257,21 +286,10 @@ export const SpreadsheetTable: React.FC<SpreadsheetTableProps> = ({ data, onUpda
             })}
           </tbody>
         </table>
-        {filteredData.length === 0 && (
-             <div className="p-10 text-center text-slate-400 flex flex-col items-center">
-                <Search className="w-8 h-8 mb-2 opacity-50" />
-                <p>Data tidak ditemukan dalam database.</p>
-                {canEdit && (
-                    <button onClick={handleAddStudent} className="mt-4 text-emerald-600 hover:underline">
-                        + Tambah Siswa Baru
-                    </button>
-                )}
-             </div>
-        )}
       </div>
       <div className="bg-slate-50 border-t border-slate-200 p-2 text-xs text-slate-500 flex justify-between px-4">
         <span>Menampilkan {filteredData.length} baris</span>
-        <span>Mode: {canEdit ? 'Admin/Editor (Dapat Menginput Nilai)' : 'Read-Only'}</span>
+        <span>Mode: {canEdit ? 'Editor (Dapat Menginput Nilai)' : 'Read-Only'}</span>
       </div>
     </div>
   );

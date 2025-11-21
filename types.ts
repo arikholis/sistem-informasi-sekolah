@@ -6,6 +6,7 @@ export interface User {
   role: UserRole;
   avatar?: string;
   studentId?: string; // Jika role adalah STUDENT
+  password?: string; // Optional untuk simulasi
 }
 
 export interface Student {
@@ -46,9 +47,11 @@ export interface AIAnalysisResult {
 
 export enum ViewState {
   DASHBOARD = 'DASHBOARD',
-  STUDENTS = 'STUDENTS', // Ganti DATABASE jadi STUDENTS
+  STUDENTS = 'STUDENTS',
   TEACHERS = 'TEACHERS',
   SCHEDULE = 'SCHEDULE',
-  MY_GRADES = 'MY_GRADES', // Khusus Siswa
-  AI_ANALYST = 'AI_ANALYST'
+  MY_GRADES = 'MY_GRADES',
+  AI_ANALYST = 'AI_ANALYST',
+  USER_MANAGEMENT = 'USER_MANAGEMENT',
+  SETTINGS = 'SETTINGS' // New View
 }
