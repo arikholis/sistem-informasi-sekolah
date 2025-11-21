@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Student, AIAnalysisResult } from '../types';
 import { analyzeStudentData } from '../services/geminiService';
-import { Sparkles, AlertOctagon, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { Sparkles, AlertOctagon, CheckCircle2, Loader2, RefreshCw, Calculator } from 'lucide-react';
 
 interface AIAnalystProps {
   data: Student[];
@@ -19,7 +19,7 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ data }) => {
       const result = await analyzeStudentData(data);
       setAnalysis(result);
     } catch (err) {
-      setError('Terjadi kesalahan saat menghubungkan ke AI. Pastikan API Key telah dikonfigurasi.');
+      setError('Terjadi kesalahan saat memproses data.');
     } finally {
       setLoading(false);
     }
@@ -29,11 +29,11 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ data }) => {
     <div className="h-full flex flex-col max-w-5xl mx-auto">
       <div className="mb-8 text-center">
         <div className="inline-flex items-center justify-center p-3 bg-emerald-100 rounded-full mb-4">
-            <Sparkles className="w-8 h-8 text-emerald-600" />
+            <Calculator className="w-8 h-8 text-emerald-600" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900">AI Education Analyst</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Analisis Statistik Akademik</h2>
         <p className="text-slate-500 mt-2 max-w-2xl mx-auto">
-          Gunakan kecerdasan buatan Gemini untuk menganalisis tren akademik, mengidentifikasi siswa yang membutuhkan bantuan, dan mendapatkan rekomendasi strategis untuk Smart Ekselensia.
+          Sistem analisis otomatis untuk mengidentifikasi tren akademik, siswa berisiko, dan memberikan rekomendasi strategis berdasarkan data real-time.
         </p>
       </div>
 
@@ -44,7 +44,7 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ data }) => {
             className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
           >
             <Sparkles className="w-5 h-5" />
-            Mulai Analisis Data Siswa
+            Mulai Analisis Data
           </button>
         </div>
       )}
@@ -52,8 +52,7 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ data }) => {
       {loading && (
         <div className="flex flex-col items-center justify-center flex-1 min-h-[400px]">
           <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
-          <p className="text-slate-500 font-medium">Sedang menganalisis data akademik...</p>
-          <p className="text-slate-400 text-sm mt-1">Ini mungkin memakan waktu beberapa detik.</p>
+          <p className="text-slate-500 font-medium">Sedang mengkalkulasi data akademik...</p>
         </div>
       )}
 
@@ -73,7 +72,7 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ data }) => {
                 onClick={handleAnalyze}
                 className="text-slate-500 hover:text-emerald-600 flex items-center gap-2 text-sm"
             >
-                <RefreshCw className="w-4 h-4" /> Refresh Analisis
+                <RefreshCw className="w-4 h-4" /> Refresh Data
             </button>
           </div>
 
@@ -93,7 +92,7 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ data }) => {
             <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 shadow-sm border border-emerald-100">
                 <h3 className="text-lg font-bold text-emerald-900 mb-4 flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                    Rekomendasi Strategis
+                    Rekomendasi Tindakan
                 </h3>
                 <ul className="space-y-3">
                     {analysis.recommendations.map((rec, idx) => (
@@ -109,14 +108,14 @@ export const AIAnalyst: React.FC<AIAnalystProps> = ({ data }) => {
             <div className="bg-gradient-to-br from-rose-50 to-white rounded-xl p-6 shadow-sm border border-rose-100">
                 <h3 className="text-lg font-bold text-rose-900 mb-4 flex items-center gap-2">
                     <AlertOctagon className="w-5 h-5 text-rose-600" />
-                    Perhatian Khusus Diperlukan
+                    Siswa Perlu Perhatian (Nilai/Absensi)
                 </h3>
                 {analysis.atRiskStudents.length > 0 ? (
                     <ul className="space-y-2">
                         {analysis.atRiskStudents.map((studentName, idx) => (
                             <li key={idx} className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm border border-rose-100">
                                 <span className="text-slate-800 font-medium">{studentName}</span>
-                                <span className="text-xs px-2 py-1 bg-rose-100 text-rose-700 rounded">Prioritas Tinggi</span>
+                                <span className="text-xs px-2 py-1 bg-rose-100 text-rose-700 rounded">Prioritas</span>
                             </li>
                         ))}
                     </ul>

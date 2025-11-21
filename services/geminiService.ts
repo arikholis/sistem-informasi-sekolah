@@ -1,88 +1,85 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { Student, AIAnalysisResult } from '../types';
 
-// In a real app, this key should be securely managed.
-// Since the instructions say to assume process.env.API_KEY is available:
-const apiKey = process.env.API_KEY || ''; 
-
-let aiClient: GoogleGenAI | null = null;
-
-const getAiClient = () => {
-    if (!aiClient) {
-        aiClient = new GoogleGenAI({ apiKey });
-    }
-    return aiClient;
-}
+// LAYANAN ANALISIS LOKAL (OFFLINE / TANPA API)
+// Menggantikan Gemini AI dengan perhitungan statistik manual agar bisa dideploy di Netlify tanpa API Key.
 
 export const analyzeStudentData = async (students: Student[]): Promise<AIAnalysisResult> => {
-    if (!apiKey) {
-        throw new Error("API Key is missing");
-    }
+    // Simulasi delay agar terasa seperti sedang memproses
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-    const ai = getAiClient();
-
-    // Serialize student data to a string for the prompt
-    const dataString = JSON.stringify(students.map(s => ({
-        name: s.name,
-        class: s.class,
-        averages: {
-            math: s.math,
-            science: s.science,
-            english: s.english,
-            islamic: s.islamicStudies
-        },
-        attendance: s.attendance,
-        behavior: s.behavior
-    })));
-
-    const prompt = `
-    Anda adalah konsultan pendidikan ahli untuk Sekolah Smart Ekselensia Indonesia.
-    Analisis data siswa berikut (format JSON) dan berikan wawasan mendalam.
-    
-    Data Siswa:
-    ${dataString}
-    
-    Tugas:
-    1. Berikan ringkasan kinerja akademik keseluruhan.
-    2. Berikan 3 rekomendasi strategis untuk meningkatkan kualitas pendidikan berdasarkan data ini.
-    3. Identifikasi siswa yang berisiko (nilai rendah atau kehadiran buruk) dan butuh perhatian khusus.
-    `;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        summary: { type: Type.STRING },
-                        recommendations: { 
-                            type: Type.ARRAY,
-                            items: { type: Type.STRING }
-                        },
-                        atRiskStudents: {
-                            type: Type.ARRAY,
-                            items: { type: Type.STRING }
-                        }
-                    },
-                    required: ["summary", "recommendations", "atRiskStudents"]
-                }
-            }
-        });
-
-        const text = response.text;
-        if (!text) throw new Error("No response from AI");
-        
-        return JSON.parse(text) as AIAnalysisResult;
-
-    } catch (error) {
-        console.error("Gemini Analysis Error:", error);
+    if (students.length === 0) {
         return {
-            summary: "Gagal menganalisis data. Pastikan API Key valid.",
-            recommendations: ["Periksa koneksi internet", "Coba lagi nanti"],
+            summary: "Belum ada data siswa yang tersedia untuk dianalisis.",
+            recommendations: ["Tambahkan data siswa terlebih dahulu."],
             atRiskStudents: []
         };
     }
+
+    // 1. Kalkulasi Statistik Dasar
+    const totalStudents = students.length;
+    let totalMath = 0, totalScience = 0, totalEnglish = 0, totalIslamic = 0, totalAttendance = 0;
+    const atRiskList: string[] = [];
+
+    students.forEach(s => {
+        totalMath += s.math;
+        totalScience += s.science;
+        totalEnglish += s.english;
+        totalIslamic += s.islamicStudies;
+        totalAttendance += s.attendance;
+
+        // Logika Deteksi Resiko
+        const avgScore = (s.math + s.science + s.english + s.islamicStudies) / 4;
+        if (avgScore < 65 || s.attendance < 80 || s.behavior === 'Perlu Bimbingan') {
+            atRiskList.push(s.name);
+        }
+    });
+
+    const avgMath = totalMath / totalStudents;
+    const avgScience = totalScience / totalStudents;
+    const avgEnglish = totalEnglish / totalStudents;
+    const avgAttendance = totalAttendance / totalStudents;
+
+    // 2. Generate Summary Otomatis
+    const bestSubject = Math.max(avgMath, avgScience, avgEnglish);
+    let bestSubjectName = '';
+    if (bestSubject === avgMath) bestSubjectName = 'Matematika';
+    else if (bestSubject === avgScience) bestSubjectName = 'IPA';
+    else if (bestSubject === avgEnglish) bestSubjectName = 'Bahasa Inggris';
+
+    const summary = `Berdasarkan data terkini dari ${totalStudents} siswa, rata-rata kehadiran sekolah mencapai ${avgAttendance.toFixed(1)}%. ` +
+                    `Kinerja akademik menunjukkan hasil terkuat di mata pelajaran ${bestSubjectName}. ` +
+                    `Terdapat ${atRiskList.length} siswa yang teridentifikasi membutuhkan perhatian khusus berdasarkan kombinasi nilai, kehadiran, dan perilaku.`;
+
+    // 3. Generate Rekomendasi Logis
+    const recommendations: string[] = [];
+
+    if (avgAttendance < 90) {
+        recommendations.push("Tingkatkan program pemantauan kehadiran harian dan komunikasi dengan wali murid.");
+    } else {
+        recommendations.push("Pertahankan budaya disiplin kehadiran yang sudah baik.");
+    }
+
+    if (avgMath < 70) {
+        recommendations.push("Adakan kelas tambahan atau klinik belajar khusus untuk mata pelajaran Matematika.");
+    }
+
+    if (avgEnglish < 70) {
+        recommendations.push("Perbanyak sesi praktik percakapan (speaking) untuk meningkatkan nilai Bahasa Inggris.");
+    }
+
+    if (atRiskList.length > 0) {
+        recommendations.push(`Segera jadwalkan sesi konseling untuk ${atRiskList.length} siswa yang terindikasi berisiko akademik/perilaku.`);
+    }
+
+    // Pastikan minimal ada 3 rekomendasi
+    if (recommendations.length < 3) {
+        recommendations.push("Lakukan evaluasi kurikulum berkala setiap akhir bulan.");
+        recommendations.push("Berikan penghargaan kepada siswa dengan peningkatan nilai tertinggi.");
+    }
+
+    return {
+        summary,
+        recommendations: recommendations.slice(0, 5), // Ambil max 5 rekomendasi
+        atRiskStudents: atRiskList
+    };
 };
